@@ -372,7 +372,26 @@ footer a:hover {
 body{
 	font-family: 'Amatic SC', cursive;
 	font-size:80px;
+	background-color:#f2f2f2;
+	position:relative;
+	min-height:100%;
 }
+#container{
+	background-color:#f2f2f2;
+}
+#my-stupid-face{
+	position:fixed;
+	right:25px;
+	text-align:right;
+	bottom:-150px;
+}
+#main_content{
+	float:left;
+	width:80%;
+	z-index:999;
+	position:relative;
+}
+
 
 /* Mobile Landscape Size to Tablet Portrait (devices and browsers) */
 @media only screen and (min-width: 480px) and (max-width: 767px) {
@@ -385,7 +404,7 @@ body{
 /* Mobile Portrait Size to Mobile Landscape Size (devices and browsers) */
 @media only screen and (max-width: 479px) {
 	body{
-		font-size:40px;
+		font-size:50px;
 		line-height:1.5;
 	}
 }
