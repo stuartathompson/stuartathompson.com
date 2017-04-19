@@ -117,5 +117,12 @@ a:hover:after {
 	.thing{
 		font-size:20px;
 	}*/
+	a{
+		display:inline;
+		text-decoration:underline;
+	}
+	a:after{
+		height:0;
+	}
 
 }
