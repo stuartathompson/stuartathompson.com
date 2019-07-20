@@ -1,0 +1,6 @@
+[{"item":"Lower Bound WTP","val":2900,"runningTotal":2900},
+{"item":"Private Costs","val":-2900,"runningTotal":0},
+{"item":"Initial Earnings Decline","val":-8900,"runningTotal":-2900},
+{"item":"Observed Earnings Increase","val":29100,"runningTotal":17300},
+{"item":"Projected Earnings Increase","val":95200,"runningTotal":112500},
+{"item":"Post Tax WTP Baseline","val":112500,"runningTotal":112500}]
