@@ -41,6 +41,14 @@ a:focus {
 img:not([alt]) {
   outline: 3px solid red;
 }
+.mobile-only {
+  display: none;
+}
+@media screen and (max-width: 600px) {
+  .mobile-only {
+    display: block;
+  }
+}
 .w-100 {
   width: 100%;
 }
@@ -111,6 +119,15 @@ body.hidden {
   overflow: hidden;
   height: 100vh;
 }
+@media screen and (max-width: 600px) {
+  body.showing-controls .viz {
+    position: relative !important;
+    border-bottom: 0 !important;
+  }
+}
+body.showing-controls .header-wrapper {
+  position: relative;
+}
 body p {
   margin-top: 0;
   line-height: 1.5;
@@ -170,9 +187,22 @@ body a:hover {
   background-color: #FFD400 !important;
   border-color: #FFD400 !important;
 }
+@media screen and (min-width: 600px) {
+  .header-wrapper {
+    position: sticky;
+    position: -webkit-sticky;
+    top: 0;
+    z-index: 9;
+  }
+}
 .sub-header {
   background-color: #e7f7f5;
   padding: 5px 15px;
+}
+@media screen and (max-width: 600px) {
+  .sub-header {
+    padding: 5px 10px;
+  }
 }
 .sub-header .natural-button a {
   color: #29B6A3 !important;
@@ -192,12 +222,26 @@ body a:hover {
   z-index: 100;
   position: relative;
 }
-.header .button {
-  float: right;
+.header .title-wrap {
+  text-align: right;
+}
+@media screen and (max-width: 720px) {
+  .header .title-wrap {
+    text-align: left;
+  }
 }
 .header .title {
+  float: left;
   display: inline-block;
   font-weight: 600;
+}
+@media screen and (max-width: 720px) {
+  .header .title {
+    float: none;
+    display: block;
+    width: 100%;
+    padding: 0 0 15px 0;
+  }
 }
 .header .description {
   max-width: 1100px;
@@ -205,6 +249,11 @@ body a:hover {
   font-size: 17px;
   color: #333;
   border-top: 1px solid #eee;
+}
+@media screen and (max-width: 600px) {
+  .header .top-button {
+    display: none;
+  }
 }
 .intro {
   position: fixed;
@@ -226,6 +275,12 @@ body a:hover {
   max-width: 650px;
   margin: 0 auto;
   text-align: center;
+}
+@media screen and (max-height: 670px) and (max-width: 600px) {
+  .intro > div {
+    top: 0;
+    transform: translate(-50%, 0);
+  }
 }
 .intro h1 {
   margin-bottom: 10px;
@@ -265,6 +320,11 @@ body a:hover {
   flex-direction: column;
   display: flex;
 }
+@media screen and (max-width: 600px) {
+  #controls .controls-flex {
+    width: 100%;
+  }
+}
 #controls .sidebar-controls {
   flex-grow: 2;
 }
@@ -295,6 +355,20 @@ body a:hover {
   margin-right: 15px;
   max-width: 180px;
   width: 100%;
+}
+@media screen and (max-width: 600px) {
+  #viz-upper-controls .expandable-button,
+  #viz-upper-controls .expandable-button,
+  #viz-upper-controls .control-highlight,
+  #viz-upper-controls .control-highlight {
+    max-width: 45%;
+  }
+}
+@media screen and (max-width: 600px) {
+  #viz-upper-controls .reset-button,
+  #viz-upper-controls .reset-button {
+    display: none;
+  }
 }
 #viz-upper-controls .button a,
 #viz-upper-controls .button a {
@@ -340,7 +414,7 @@ body a:hover {
   top: 0;
   left: 0;
   display: none;
-  z-index: 99;
+  z-index: 999;
   background-color: rgba(0, 0, 0, 0.5);
 }
 .lower .x {
@@ -370,6 +444,13 @@ body a:hover {
   border-radius: 5px;
   overflow: hidden;
 }
+@media screen and (max-width: 600px) {
+  .lower #methodology-scroll {
+    width: 90vw;
+    height: 90vh;
+    z-index: 999;
+  }
+}
 .lower #methodology-scroll .methodology-relative-wrap {
   position: relative;
   overflow: visible;
@@ -380,6 +461,11 @@ body a:hover {
   display: flex;
   flex-direction: column;
 }
+@media screen and (max-width: 600px) {
+  .lower #methodology-scroll .methodology .viz {
+    float: none;
+  }
+}
 .lower #methodology-scroll .methodology .methodology-body {
   height: 75vh;
 }
@@ -387,10 +473,23 @@ body a:hover {
   position: relative;
   pointer-events: none;
 }
+@media screen and (max-width: 600px) {
+  .lower #methodology-scroll .methodology .methodology-body.stuck .sidebar {
+    top: 50%;
+    position: relative;
+  }
+}
 .lower #methodology-scroll .methodology .methodology-body.stuck .viz {
   position: fixed;
   top: 100px;
   right: -2px;
+}
+@media screen and (max-width: 600px) {
+  .lower #methodology-scroll .methodology .methodology-body.stuck .viz {
+    top: 82px;
+    right: -8px;
+    margin-bottom: 10px;
+  }
 }
 .lower #methodology-scroll .methodology .padding-bottom {
   padding-bottom: 20px;
@@ -398,6 +497,11 @@ body a:hover {
 .lower #methodology-scroll .methodology h2 {
   margin: 0;
   padding: 0;
+}
+@media screen and (max-width: 600px) {
+  .lower #methodology-scroll .methodology h2 {
+    font-size: 17px;
+  }
 }
 .lower #methodology-scroll p {
   font-size: 14px !important;
@@ -408,6 +512,12 @@ body a:hover {
 .lower #methodology-scroll .methodology-body {
   padding: 15px;
 }
+@media screen and (max-width: 600px) {
+  .lower #methodology-scroll .methodology-header,
+  .lower #methodology-scroll .methodology-body {
+    padding: 10px;
+  }
+}
 .lower #methodology-scroll .methodology-header {
   flex-grow: 1;
   border-bottom: 1px solid #bbb;
@@ -417,6 +527,11 @@ body a:hover {
   font-size: 14px;
   opacity: 0.6;
   margin: 5px 0 0;
+}
+@media screen and (max-width: 600px) {
+  .lower #methodology-scroll .methodology-header p {
+    margin: 0;
+  }
 }
 .lower #methodology-scroll .methodology-body {
   overflow-y: scroll;
@@ -457,7 +572,7 @@ body a:hover {
   position: -moz-sticky;
   position: -ms-sticky;
   position: -o-sticky;
-  top: 0;
+  top: 80px;
   right: 0;
   order: 1;
   width: 100%;
@@ -474,6 +589,10 @@ body a:hover {
 @media only screen and (max-width: 600px) {
   .viz {
     max-width: 100%;
+    float: none;
+    top: 0px;
+    background: white;
+    border-bottom: 1px solid #bbb;
   }
 }
 .infobox-parent {
@@ -701,12 +820,12 @@ h1 {
 }
 @media screen and (max-width: 800px) {
   h1 {
-    font-size: 22px;
+    font-size: 32px;
   }
 }
 @media screen and (max-width: 600px) {
   h1 {
-    font-size: 20px;
+    font-size: 30px;
   }
 }
 h2 {
@@ -937,7 +1056,7 @@ svg .chart-title {
   pointer-events: none;
   paint-order: stroke;
   stroke: white;
-  stroke-width: 1px;
+  stroke-width: 2px;
   stroke-linecap: butt;
   stroke-linejoin: miter;
   opacity: 1;

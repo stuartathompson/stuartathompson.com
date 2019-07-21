@@ -19414,6 +19414,9 @@ var _$main_33 = {};
 // better opening tooltipX
 // TODO
 // filter dropdown program to what's showing or have it reset
+// REFACTOr
+// dont' need to resassign values in update color always. color for ex. can be done sooner
+// turn off voronoi completely?
 // Browsers
 // FF
 // Safari
@@ -19445,9 +19448,19 @@ var _$main_33 = {};
       top: 30,
       bottom: 80
     };
+
+    if (window.innerWidth < 600) {
+      margin = {
+        left: 60,
+        right: 40,
+        top: 30,
+        bottom: 40
+      };
+    }
+
     width = selectorWidth - margin.left - margin.right;
     var sourceHeight = 30;
-    height = selectorHeight - margin.top - margin.bottom - sourceHeight;
+    height = window.innerWidth < 600 ? window.innerHeight * .5 - margin.top - margin.bottom - sourceHeight : selectorHeight - margin.top - margin.bottom - sourceHeight;
   }
 
   getVizProps();
@@ -19476,17 +19489,25 @@ var _$main_33 = {};
     }
   };
   var averageOrient = {
-    top: function top(text) {
-      return text.attr("text-anchor", "middle").attr("dy", -12);
+    top: {
+      dy: -13,
+      dx: 0,
+      textAnchor: 'middle'
     },
-    right: function right(text) {
-      return text.attr("text-anchor", "start").attr("dy", "0.65em").attr("dx", 12);
+    right: {
+      dy: 5,
+      dx: 12,
+      textAnchor: 'start'
     },
-    bottom: function bottom(text) {
-      return text.attr("text-anchor", "middle").attr("dy", "1.6em").attr("dx", 12);
+    bottom: {
+      dy: 16,
+      dx: 0,
+      textAnchor: 'middle'
     },
-    left: function left(text) {
-      return text.attr("text-anchor", "end").attr("dy", "0.65em").attr("dx", -12);
+    left: {
+      dy: 5,
+      dx: -12,
+      textAnchor: 'end'
     }
   };
   var textDisplay = {
@@ -19520,7 +19541,8 @@ var _$main_33 = {};
   var lastSlide = null;
   var showingControls = false;
   var tempKillScroll = false;
-  var killTooltipHover = false; // Create SVGs
+  var killTooltipHover = false;
+  var alwaysShowColor = false; // Create SVGs
 
   var svgW = _$d3Node_32.select(selector).append('svg').attr('width', width + margin.left + margin.right).attr('height', height + margin.top + margin.bottom);
   var svg = svgW.append('g').attr('transform', "translate(" + margin.left + "," + margin.top + ")").attr('class', 'svg-g'); // Tooltip
@@ -19732,11 +19754,12 @@ var _$main_33 = {};
     // Make HTML from data
     // Make clickable program list
 
-    _$d3Node_32.select('#dropdown-domains').selectAll('div').data(categories).enter().append('div').attr('class', function (d) {
+    categories = categories.sort();
+    _$d3Node_32.select('#dropdown-domains').selectAll('div.category-item').data(categories).enter().append('div').attr('class', function (d) {
       var m = data.filter(function (k) {
         return k[categoryColumn] == d;
       })[0];
-      return 'checkbox selected ' + m[groupColumn].replace(/ /g, '-');
+      return 'checkbox category-item selected ' + m[groupColumn].replace(/ /g, '-');
     }).attr('data-domain', function (d) {
       return d;
     }).html(function (d) {
@@ -19889,8 +19912,6 @@ var _$main_33 = {};
 
         $('#category-button').html(buttonText + ' <div class="arrow-down"></div>');
       }
-
-      return false;
     }); // Control checkbox clicking
 
     $('.checkbox').on('mouseup', function (d) {
@@ -20159,7 +20180,7 @@ var _$main_33 = {};
     var yConvertN = function yConvertN(n) {
       if (ySel.match(mvpfColumn)) {
         if (isNaN(parseFloat(n))) {
-          return n == 'Inf' ? 6 : -1;
+          return n == null || n == '' ? null : n == 'Inf' ? 6 : -1;
         } else if (n > -1 && n < 5) {
           return n;
         } else if (n >= 5) {
@@ -20222,7 +20243,7 @@ var _$main_33 = {};
     data = simulation.nodes();
     data = data.concat(origData); // Add axes
 
-    var xAxis = _$d3Node_32.axisBottom(x);
+    var xAxis = _$d3Node_32.axisBottom(x).tickValues(x.ticks(5));
     var xAxisGroup = svg.append('g').attr('class', 'x-axis axis').call(xAxis).attr('transform', "translate(0," + (height / 2 + 60) + ")");
     var xAxisLabel = xAxisGroup.append('text').attr('class', 'axis-label').text(labelNames.get(xSel).description).attr('x', width / 2).attr('y', margin.bottom / 2 + 14);
     var xAxisLine = xAxisGroup.selectAll('line').attr('y1', -height / 4).attr('y2', 0);
@@ -20243,7 +20264,8 @@ var _$main_33 = {};
       return getCircleSize(d);
     }).attr('fill', function (d) {
       return colorScale(d[parentCategoryColumn]);
-    }).attr('class', 'data-group-circle').style('opacity', .75).attr('stroke-width', 0).attr('stroke', '#333'); // Opening animation
+    }).attr('class', 'data-group-circle').style('opacity', .75).attr('stroke-width', 0).attr('stroke', '#333');
+    var highlightLabel = svg.append('g').attr('class', 'highlight-label'); // Opening animation
 
     var openingAnimation = true;
     var openingCategorySelection = 0;
@@ -20251,28 +20273,28 @@ var _$main_33 = {};
 
     function startOpeningAnimation() {
       clearInterval(openingT);
+      openingCategorySelection = 0;
       openingT = setInterval(function () {
         animateOpening();
-      }, 2000);
+      }, 4000);
       animateOpening();
     }
 
     function animateOpening() {
       if (openingAnimation) {
-        var randomNumber = Math.round(Math.random() * upfrontHighlightsKeys.length);
-        var randomCircleSelection = upfrontHighlightsKeys[randomNumber];
-        var sel = data[programShortNames.indexOf(randomCircleSelection)];
-        killTooltipHover = false; // circles.transition().duration(defaultAnimationTime)
-        //   .attr('fill', d => {
-        //     return d[groupColumn] == sel[groupColumn] ? colorScale(d[parentCategoryColumn]) : '#eee'
-        //   })
-        // dataGroup.filter(d => d[groupColumn] == sel[groupColumn])
-        //   .moveToFront()
-
+        var randomCircleSelection = upfrontHighlightsKeys[openingCategorySelection];
+        var sel = data.filter(function (d) {
+          return d[labelColumn] == randomCircleSelection;
+        })[0];
+        killTooltipHover = false;
+        console.log('showing', sel);
         showTooltip(sel, true, true, upfrontHighlightsHashed.get(randomCircleSelection));
       } else {
         clearInterval(openingT);
       }
+
+      openingCategorySelection++;
+      if (openingCategorySelection > upfrontHighlightsKeys.length) openingCategorySelection = 0;
     }
 
     var programCIGroup = svg.selectAll('g.program-ci').data(data).enter().append('g').attr('class', 'program-ci');
@@ -20371,7 +20393,7 @@ var _$main_33 = {};
 
     function makeLabelNumber(column, d) {
       var n = d[column];
-      n = n == null ? 'N/A' : isNaN(parseFloat(n)) ? n : parseFloat(n).toFixed(2);
+      n = n == null ? 'N/A' : isNaN(parseFloat(n)) ? n : column.match(ageColumn) ? Math.round(n * 10) / 10 : parseFloat(n).toFixed(2);
       if (n == 'Inf') n = 'Inf.';
       return n;
     } // **showtooltip
@@ -20413,7 +20435,6 @@ var _$main_33 = {};
 
 
         if (matchingDot.style('opacity') != 1) return;
-        matchingDot.moveToFront();
         dataGroup.selectAll('circle').attr('stroke-width', 0);
         matchingDot.selectAll('circle').attr('stroke-width', 2).attr('stroke', 'black').moveToFront(); // We're forcing a tooltip to show from somewhere else, like the controls, so highlight it so it can be seen more easily
 
@@ -20426,16 +20447,20 @@ var _$main_33 = {};
         }
 
         if (showLabel === true || forced) {
-          // We're showing label and not actual tooltip
-          voronoiLabels.style('opacity', 0).attr('class', 'vlabel dedupe');
-          voronoiLabels.each(function (d) {
-            if (d.id == id) {
-              _$d3Node_32.select(this).style('opacity', 1).attr('class', 'vlabel dedupe highlight').moveToFront();
+          forcedLabelArr = forcedLabel.split('<br />'); // We're showing label and not actual tooltip
 
-              if (forcedLabel != null) {
-                _$d3Node_32.select(this).text(forcedLabel);
-              }
-            }
+          voronoiLabels.style('opacity', 0).attr('class', 'vlabel dedupe');
+          var vtarget = voronoiLabels.filter(function (d) {
+            return d.id == id;
+          });
+          vtarget.each(function (d) {
+            highlightLabel.attr('transform', "translate(" + x(d[xSel]) + "," + (d.y < height / 2 ? height / 2 - 20 : height / 2 + 25) + ")").style('opacity', 1);
+            highlightLabel.selectAll('text').remove();
+            highlightLabel.selectAll('text').data(d.y < height / 2 ? forcedLabelArr.reverse() : forcedLabelArr).enter().append('text').text(function (d) {
+              return d;
+            }).attr('class', 'label highlight vlabel').attr('y', function (k, i) {
+              return d.y < height / 2 ? -15 - 14 * i - 1 * i : 15 + 14 * i + 1 * i;
+            });
           });
         } else {
           matchingDot.each(function (d) {
@@ -20494,19 +20519,20 @@ var _$main_33 = {};
 
 
             $('.tooltip').css('opacity', 1).css('left', function (k) {
-              var tooltipX = x(d[xSel]) + margin.top;
+              var tooltipX = x(d[xSel]) + margin.left;
               var right = true;
 
               if (tooltipX + $('.tooltip').outerWidth() > width) {
                 right = false;
                 tooltipX = tooltipX - $('.tooltip').outerWidth() / 2 - 25;
+                tooltipX = tooltipX < 0 ? 0 : tooltipX;
               }
 
               var tooltipY = forced ? d.y : y(d[ySel]) + margin.top;
 
               if (tooltipY > height / 2) {
                 tooltipY = tooltipY - $('.tooltip').outerHeight() - 25;
-                tooltipX = tooltipY < 0 ? right ? tooltipX + 65 : tooltipX - 65 : tooltipX;
+                tooltipX = tooltipY < 0 ? right ? tooltipX + 65 : 0 : tooltipX;
               } // If Y will be 0 then force this to the left or right instead
 
 
@@ -20537,81 +20563,7 @@ var _$main_33 = {};
         });
         $('.tooltip').css('opacity', 0);
       }
-    } // Table
-
-
-    $table = $('table.table');
-    $table.append('<tr/>');
-    $header = $table.find('tr').last(); // 1. First add the header
-
-    for (var head in data[0]) {
-      if (tableValues.indexOf(head) > -1) {
-        $header.append("<th>" + head + "</th>");
-      }
-    } // 2. Then add the main category headers with expand/collapse
-
-
-    for (var _iterator2 = categories, _isArray2 = Array.isArray(_iterator2), _i2 = 0, _iterator2 = _isArray2 ? _iterator2 : _iterator2[Symbol.iterator]();;) {
-      var _ref2;
-
-      if (_isArray2) {
-        if (_i2 >= _iterator2.length) break;
-        _ref2 = _iterator2[_i2++];
-      } else {
-        _i2 = _iterator2.next();
-        if (_i2.done) break;
-        _ref2 = _i2.value;
-      }
-
-      var dom = _ref2;
-      $table.append("<tr data-dom=\"" + dom + "\" class=\"expandable\"><td colspan=\"100\">" + dom + "</td></tr>");
-    } // 3. Then add the rows under each expand/collapse row
-
-
-    for (var _iterator3 = data, _isArray3 = Array.isArray(_iterator3), _i3 = 0, _iterator3 = _isArray3 ? _iterator3 : _iterator3[Symbol.iterator]();;) {
-      var _ref3;
-
-      if (_isArray3) {
-        if (_i3 >= _iterator3.length) break;
-        _ref3 = _iterator3[_i3++];
-      } else {
-        _i3 = _iterator3.next();
-        if (_i3.done) break;
-        _ref3 = _i3.value;
-      }
-
-      var row = _ref3;
-      // Find the matching header
-      var $row = $table.find('tr[data-dom="' + row[categoryColumn] + '"]');
-      $row.after('<tr class="hide" data-child-dom="' + row[categoryColumn] + '" data-id="' + row[idColumn] + '"/>');
-      $tr = $table.find('tr[data-id="' + row[idColumn] + '"]').last();
-
-      for (var cell in row) {
-        if (tableValues.indexOf(cell) > -1) {
-          var c = row[cell];
-          $tr.append("<td>" + c + "</td>");
-        }
-      }
     }
-
-    $('tr.expandable').click(function () {
-      if ($(this).hasClass('expanded')) {
-        $(this).removeClass('expanded');
-        $(this).parents('.table').find('tr[data-child-dom="' + $(this).data('dom') + '"]').addClass('hide').removeClass('show');
-      } else {
-        $(this).addClass('expanded');
-        $(this).parents('.table').find('tr[data-child-dom="' + $(this).data('dom') + '"]').addClass('show').removeClass('hide');
-      }
-    });
-    $('h3.expandable').click(function () {
-      if ($(this).hasClass('expanded')) {
-        $(this).removeClass('expanded');
-        $(this).next().addClass('hide').removeClass('show');
-      } else {
-        $(this).addClass('expanded');
-        $(this).next().addClass('show').removeClass('hide');
-      }
-    });
 
     function appendAssumptions() {
       // Remove any existing assumptions
@@ -20685,7 +20637,10 @@ var _$main_33 = {};
         });
         var yExtent = _$d3Node_32.extent(data, function (d) {
           return yConvertN(d[ySel]);
-        });
+        }); // Update the domain with the latest
+
+        x.domain(xExtent);
+        ny.domain(yExtent);
       } else {
         // We've asked to redo the sizes, or we've decided any update coming from the lastSlide designated must be forced updated
         var xExtent = _$d3Node_32.extent(data, function (d) {
@@ -20798,7 +20753,7 @@ var _$main_33 = {};
       circles.each(function (d) {
         var thisIn = true; // exclude if it's not in existing category or if the value is null
 
-        if (categorySelections.indexOf(d[categoryColumn]) == -1 || d[ySel] === null) {
+        if (categorySelections.indexOf(d[categoryColumn]) == -1 || yConvertN(d[ySel]) === null) {
           thisIn = -1;
         } else if (sampleSel == '' && d[baselineColumn] == 0) {
           // Always hide baseline=0 when baseline is selected
@@ -20819,19 +20774,19 @@ var _$main_33 = {};
 
             if (ch == 'indexOf') {
               // thatIn = false
-              for (var _iterator4 = chVal, _isArray4 = Array.isArray(_iterator4), _i4 = 0, _iterator4 = _isArray4 ? _iterator4 : _iterator4[Symbol.iterator]();;) {
-                var _ref4;
+              for (var _iterator2 = chVal, _isArray2 = Array.isArray(_iterator2), _i2 = 0, _iterator2 = _isArray2 ? _iterator2 : _iterator2[Symbol.iterator]();;) {
+                var _ref2;
 
-                if (_isArray4) {
-                  if (_i4 >= _iterator4.length) break;
-                  _ref4 = _iterator4[_i4++];
+                if (_isArray2) {
+                  if (_i2 >= _iterator2.length) break;
+                  _ref2 = _iterator2[_i2++];
                 } else {
-                  _i4 = _iterator4.next();
-                  if (_i4.done) break;
-                  _ref4 = _i4.value;
+                  _i2 = _iterator2.next();
+                  if (_i2.done) break;
+                  _ref2 = _i2.value;
                 }
 
-                var val = _ref4;
+                var val = _ref2;
                 if (val == d[chCol]) thatIn = true;
               }
             } else if (ch == 'lt') {
@@ -20848,13 +20803,16 @@ var _$main_33 = {};
           } // Set it to false if any of the checks came back false
 
 
-          for (var _i5 = 0, _checks = checks; _i5 < _checks.length; _i5++) {
-            var ch = _checks[_i5];
+          for (var _i3 = 0, _checks = checks; _i3 < _checks.length; _i3++) {
+            var ch = _checks[_i3];
             if (ch != true) thisIn = false;
           }
         }
 
         d.opacity = thisIn === true ? 1 : thisIn == -1 ? 0 : showingPrograms ? 1 : 0; // Decide the fill, which is a little more complicated because of average and CI layers
+        // if(alwaysShowColor){
+        //   d.fill = colorScale(d[parentCategoryColumn])
+        // } else
 
         if (thisIn === true) {
           // This node is included
@@ -20894,7 +20852,7 @@ var _$main_33 = {};
       }).style('opacity', function (d) {
         return d.opacity;
       }).attr('fill', function (d) {
-        return d.fill;
+        return alwaysShowColor ? colorScale(d[parentCategoryColumn]) : d.fill;
       }); // Move PROGRAMS CONFIDENCE INTERVAL
 
       programCIGroup.transition().duration(defaultAnimationTime).attr('transform', function (d) {
@@ -20949,19 +20907,19 @@ var _$main_33 = {};
             if (ch == 'indexOf') {
               var thatIn = false;
 
-              for (var _iterator5 = chVal, _isArray5 = Array.isArray(_iterator5), _i6 = 0, _iterator5 = _isArray5 ? _iterator5 : _iterator5[Symbol.iterator]();;) {
-                var _ref5;
+              for (var _iterator3 = chVal, _isArray3 = Array.isArray(_iterator3), _i4 = 0, _iterator3 = _isArray3 ? _iterator3 : _iterator3[Symbol.iterator]();;) {
+                var _ref3;
 
-                if (_isArray5) {
-                  if (_i6 >= _iterator5.length) break;
-                  _ref5 = _iterator5[_i6++];
+                if (_isArray3) {
+                  if (_i4 >= _iterator3.length) break;
+                  _ref3 = _iterator3[_i4++];
                 } else {
-                  _i6 = _iterator5.next();
-                  if (_i6.done) break;
-                  _ref5 = _i6.value;
+                  _i4 = _iterator3.next();
+                  if (_i4.done) break;
+                  _ref3 = _i4.value;
                 }
 
-                var val = _ref5;
+                var val = _ref3;
                 if (val == d[chCol]) thatIn = true;
               }
             } else if (ch == 'lt') {
@@ -20977,8 +20935,8 @@ var _$main_33 = {};
             checks.push(thatIn);
           }
 
-          for (var _i7 = 0, _checks2 = checks; _i7 < _checks2.length; _i7++) {
-            var ch = _checks2[_i7];
+          for (var _i5 = 0, _checks2 = checks; _i5 < _checks2.length; _i5++) {
+            var ch = _checks2[_i5];
             if (ch != true) thisIn = false;
           }
         } // showingAverages means we should semi-hide this, which we do through color and not opacity
@@ -20992,7 +20950,7 @@ var _$main_33 = {};
       averageCircles.transition().duration(defaultAnimationTime).style('opacity', function (d) {
         return d.opacity;
       }).attr('fill', function (d) {
-        return d.fill;
+        return alwaysShowColor ? colorScale(d[parentCategoryColumn]) : d.fill;
       }); // AVERAGE CI: Simple show/hide of confidence intervals
 
       confidenceIntervalGroup.transition().duration(defaultAnimationTime).attr('transform', function (d) {
@@ -21019,11 +20977,15 @@ var _$main_33 = {};
       }).attr('y2', function (d) {
         return y(d[averageYSelActive + upperCI]) ? y(d[averageYSelActive + upperCI]) : 0;
       }).attr('stroke', function (d) {
-        return d.fill;
+        return alwaysShowColor ? colorScale(d[parentCategoryColumn]) : d.fill;
       }); // .style('opacity', d => d.opacity)
       // If in and we're highlighting only some parentCategories, add a growing highlight circle animation
 
+      console.log(highlightDots);
+
       if (check != null && highlightDots) {
+        console.log('tarting a dot');
+
         if (showingPrograms && !showingAverages) {
           dataGroup.filter(function (d) {
             return d.thisIn;
@@ -21050,7 +21012,7 @@ var _$main_33 = {};
         return Number.isInteger(tick);
       });
       yAxis = _$d3Node_32.axisLeft(ny).tickValues(yAxisTicks);
-      xAxisGroup.call(xAxis);
+      xAxisGroup.call(xAxis.tickValues(x.ticks(5)));
       yAxisGroup.call(yAxis);
       yAxisGroup.selectAll('line').attr('x1', 0).attr('x2', width);
       xAxisGroup.selectAll('line').attr('y1', -height).attr('y2', 0); // Apply special formatting to axes
@@ -21069,7 +21031,7 @@ var _$main_33 = {};
 
       svg.selectAll('.mvpf-tick').remove();
 
-      if (ySel == mvpfColumn) {
+      if (ySel.match(mvpfColumn) !== null) {
         yAxisGroup.selectAll('.tick').filter(function (d) {
           return d == 5;
         }).select('text').text('>5.0');
@@ -21078,8 +21040,8 @@ var _$main_33 = {};
         });
         top.select('text').text('∞');
         top.select('line').style('stroke', mainColor);
-        top.append('path').attr('class', 'mvpf-tick').attr('d', 'M -5,10 L 5,0').style('stroke', '#bdbfbf').attr('transform', "translate(0, " + (y(5.5) - 5) + ")");
-        top.append('path').attr('class', 'mvpf-tick').attr('d', 'M -5,10 L 5,0').attr('transform', "translate(0, " + y(5.5) + ")").style('stroke', '#bdbfbf');
+        top.append('path').attr('class', 'mvpf-tick').attr('d', 'M -5,10 L 5,0').style('stroke', '#bdbfbf').attr('transform', "translate(0, " + (ny(5.5) - 5) + ")");
+        top.append('path').attr('class', 'mvpf-tick').attr('d', 'M -5,10 L 5,0').attr('transform', "translate(0, " + ny(5.5) + ")").style('stroke', '#bdbfbf');
       } // Reassign axis Labels
 
 
@@ -21099,9 +21061,7 @@ var _$main_33 = {};
 
 
       if (forced) {
-        // if(showingAverages){
-        // } else {
-        var preData = data; // }
+        var preData = data;
       } else if (showingAverages && !showingPrograms) {
         var preData = averageData;
       } else {
@@ -21133,6 +21093,9 @@ var _$main_33 = {};
         forced ? d.y : y(d[ySelActive]);
       }).attr('class', 'vlabel dedupe').style('opacity', 0); // Reposition labels according to voronoi
 
+      labelHighlightsHashed = _$d3Node_32.map(labelHighlights, function (d) {
+        return d.label;
+      });
       svg.selectAll('.vlabel').text(function (d) {
         return d[labelColumn] ? d[labelColumn] : d[categoryColumn];
       }).attr('class', 'vlabel dedupe') // Removes highlight class
@@ -21144,9 +21107,9 @@ var _$main_33 = {};
           return k ? k.data[2] == d.id : false;
         }); // Determine where to place the label for the best fit
 
-        var _ref6 = [x(d[xSel]), y(d[ySelActive])],
-            dx = _ref6[0],
-            dy = _ref6[1];
+        var _ref4 = [x(d[xSel]), y(d[ySelActive])],
+            dx = _ref4[0],
+            dy = _ref4[1];
         var cx = null,
             cy = null;
         var pArea = 0;
@@ -21161,15 +21124,12 @@ var _$main_33 = {};
         // But, if we're filtering, always show the label and hide via dedeupe instead
         // First check by label, since if we've defined a label we definitely want to show it
 
-        labelHighlightsHashed = _$d3Node_32.map(labelHighlights, function (d) {
-          return d.label;
-        });
-        var inOrOut = labelHighlights ? labelHighlightsHashed.get(d[labelColumn]) : false;
+        var inOrOut = labelHighlights ? d.group_average === 0 ? labelHighlightsHashed.get(d[labelColumn]) : labelHighlightsHashed.get(d[categoryColumn]) : false;
 
         if (labelHighlights) {
           if (inOrOut) {
             labelOpacity = 1;
-            orientSel = labelHighlightsHashed.get(d[labelColumn]).position;
+            orientSel = d.group_average === 0 ? labelHighlightsHashed.get(d[labelColumn]).position : labelHighlightsHashed.get(d[categoryColumn]).position;
           } else {
             labelOpacity = 0;
           }
@@ -21196,8 +21156,9 @@ var _$main_33 = {};
             // We're not even showing labels, so this was an exercise in futility
             labelOpacity = 0;
           }
-        } // sHow/hide
+        }
 
+        var orientOption = d.group_average === 0 ? orientValues : averageOrient; // sHow/hide
 
         _$d3Node_32.select(this).style('opacity', labelOpacity);
         d.origPos = {
@@ -21207,12 +21168,12 @@ var _$main_33 = {};
           y: _$d3Node_32.select(this).attr('y')
         };
         d.endPos = {
-          dx: orientValues[orientSel]['dx'],
-          dy: orientValues[orientSel]['dy'],
+          dx: orientOption[orientSel]['dx'],
+          dy: orientOption[orientSel]['dy'],
           x: x(d[xSel]),
           y: forced ? d.y : y(d[ySelActive])
         };
-        _$d3Node_32.select(this).attr('dx', orientValues[orientSel]['dx']).attr('dy', orientValues[orientSel]['dy']).attr('text-anchor', orientValues[orientSel]['textAnchor']).attr('x', function (d) {
+        _$d3Node_32.select(this).attr('dx', orientOption[orientSel]['dx']).attr('dy', orientOption[orientSel]['dy']).attr('text-anchor', orientOption[orientSel]['textAnchor']).attr('x', function (d) {
           return x(d[xSel]);
         }).attr('y', function (d) {
           return forced ? d.y : y(d[ySelActive]);
@@ -21261,7 +21222,8 @@ var _$main_33 = {};
       labelHighlights = null;
       sampleSel = '';
       assumptionSel = '';
-      highlightDots = true; // Set attributes by slide
+      highlightDots = true;
+      alwaysShowColor = false; // Set attributes by slide
       // **switch
 
       switch (type) {
@@ -21276,11 +21238,33 @@ var _$main_33 = {};
 
         case 'mvpf':
           // #2
+          alwaysShowColor = true;
           xSel = yearColumn;
+          applyCheckTo = ['programs'];
+          checkColumn = [labelColumn];
+          check = ['indexOf'];
+          checkValue = [['MA Scholarship']];
+          labelHighlights = [{
+            label: 'MA Scholarship',
+            position: 'bottom'
+          }];
+          break;
+
+        case 'pre-methodology':
+          xSel = yearColumn;
+          applyCheckTo = ['programs'];
+          checkColumn = [mvpfColumn];
+          check = ['indexOf'];
+          checkValue = [['Inf']];
+          labelHighlights = [{
+            label: 'FIU GPA',
+            position: 'bottom'
+          }];
           break;
 
         case 'age':
           // #3
+          alwaysShowColor = true;
           applyCheckTo = ['programs'];
           checkColumn = [ageColumn, mvpfColumn];
           check = ['lt', 'gt'];
@@ -21302,12 +21286,65 @@ var _$main_33 = {};
           showingProgramCI = true;
           break;
 
+        case 'cost-medicaid':
+          alwaysShowColor = true;
+          ySel = costColumn;
+          redoAxesBy = 'programs';
+          showingAverages = true;
+          showingPrograms = false;
+          applyCheckTo = ['averages'];
+          check = ['indexOf'];
+          checkColumn = [categoryColumn];
+          checkValue = [['Child Education', 'Health Child', 'College Kids']];
+          break;
+
         case 'average dots with confidence intervals':
           showingCI = true;
+          redoAxesBy = 'programs';
           showingAverages = true;
           showingPrograms = false;
           animate = true;
           redoAxesBy = 'programs';
+          labelHighlights = [{
+            label: 'Child Education',
+            position: 'left'
+          }, {
+            label: 'Health Child',
+            position: 'top'
+          }, {
+            label: 'College Kids',
+            position: 'right'
+          }, {
+            label: 'Job Training',
+            position: 'left'
+          }, {
+            label: 'Housing Vouchers',
+            position: 'left'
+          }, {
+            label: 'Cash Transfers',
+            position: 'top'
+          }, {
+            label: 'SSI',
+            position: 'right'
+          }, {
+            label: 'Nutrition',
+            position: 'bottom'
+          }, {
+            label: 'UI',
+            position: 'right'
+          }, {
+            label: 'College Adult',
+            position: 'right'
+          }, {
+            label: 'Top Taxes',
+            position: 'right'
+          }, {
+            label: 'DI',
+            position: 'right'
+          }, {
+            label: 'Health Adult',
+            position: 'left'
+          }];
           break;
 
         case 'average dots only':
@@ -21332,11 +21369,7 @@ var _$main_33 = {};
 
         case 'age of beneficiaries highlight over 20':
           // #7
-          redoAxesBy = 'programs';
-          showingPrograms = false;
-          showingAverages = true;
-          showingCI = true;
-          applyCheckTo = ['averages', 'averages'];
+          applyCheckTo = ['programs', 'programs'];
           check = ['gt', 'bw'];
           checkColumn = [xSel, ySel];
           checkValue = [20, [.5, 3.035]];
@@ -21422,6 +21455,8 @@ var _$main_33 = {};
     }; //end of updateSlide
 
 
+    var waypointOffset = window.innerWidth < 600 ? 75 : 50;
+    var waypointOffsetUp = window.innerWidth < 600 ? 25 : 0;
     $('.main-slide').each(function () {
       var _this13 = this;
 
@@ -21436,7 +21471,7 @@ var _$main_33 = {};
             updateSlide($(_this13).data('type'));
           }
         },
-        offset: '50%'
+        offset: waypointOffset + '%'
       });
       var waypoint = new Waypoint({
         element: document.getElementById(id),
@@ -21447,7 +21482,7 @@ var _$main_33 = {};
             updateSlide($(_this13).data('type'));
           }
         },
-        offset: '0%'
+        offset: waypointOffsetUp + '%'
       });
     });
   } // End of build
@@ -21457,7 +21492,7 @@ var _$main_33 = {};
     // Chart vars
     var bcDataRaw = bcDataArr;
     var bc2DataRaw = bc2DataArr;
-    var bcMargin = 5;
+    var bcMargin = window.innerWidth < 600 ? 10 : 5;
     var bcSelector = '.methodology-viz';
     $('.methodology-viz').empty();
     var selectorWidth, selectorHeight;
@@ -21465,7 +21500,8 @@ var _$main_33 = {};
       bcSelectorWidth = this.getBoundingClientRect().width;
     });
     var bcWidth = bcSelectorWidth - bcMargin * 2;
-    var bcHeight = $('#methodology-scroll').outerHeight() - 25 - bcMargin * 2 - $('.methodology-header').outerHeight(); // Main svg
+    var bcHeight = $('#methodology-scroll').outerHeight() - 25 - bcMargin * 2 - $('.methodology-header').outerHeight();
+    bcHeight = window.innerWidth < 600 ? $('#methodology-scroll').outerHeight() / 2 - $('.methodology-header').outerHeight() - bcMargin * 2 : bcHeight; // Main svg
 
     var methSvg = _$d3Node_32.select('.methodology-viz').append('svg').attr('width', bcWidth + bcMargin * 2).attr('height', bcHeight + bcMargin * 2);
     var bcSvg = methSvg.append('g');
@@ -21653,6 +21689,8 @@ var _$main_33 = {};
         $('.methodology-body').removeClass('stuck');
       }
     });
+    var waypointOffset = window.innerWidth < 600 ? 80 : 50;
+    var waypointOffsetUp = window.innerWidth < 600 ? 20 : 0;
     $('.bc-slide').each(function () {
       var id = 'id' + Math.round(Math.random() * 1000000);
       $(this).attr('id', id);
@@ -21665,7 +21703,7 @@ var _$main_33 = {};
             updateBCSlide(type, title);
           }
         },
-        offset: '50%',
+        offset: waypointOffset + '%',
         context: document.getElementById('methodology-body')
       });
       var waypoint = new Waypoint({
@@ -21675,18 +21713,26 @@ var _$main_33 = {};
             updateBCSlide(type, title);
           }
         },
-        offset: '0%',
+        offset: waypointOffsetUp + '%',
         context: document.getElementById('methodology-body')
       });
     });
     var chartTitle = methSvg.append('text').text('Net Cost to Government').attr('class', 'chart-title').attr('x', 0).attr('y', 15);
-    var lineChart = methSvg.append('g');
+    var lineChart = methSvg.append('g').attr('transform', "translate(" + bcMargin + ", " + bcMargin + ")");
 
     function makeLineChart(data) {
-      var lineMargin = 40;
-      var x = _$d3Node_32.scaleLinear().domain([0, 65]).range([lineMargin, bcWidth - lineMargin]);
-      var y = _$d3Node_32.scaleLinear().domain([-58748.332, 58748.332]).range([bcHeight - lineMargin, lineMargin]);
-      var secondY = _$d3Node_32.scaleLinear().domain([0, 60000]).range([bcHeight - lineMargin, lineMargin]);
+      var bcSelector = '.methodology-viz';
+      var selectorWidth, selectorHeight;
+      _$d3Node_32.select(bcSelector).each(function () {
+        bcSelectorWidth = this.getBoundingClientRect().width;
+      });
+      var bcWidth = bcSelectorWidth - bcMargin * 2;
+      var bcHeight = $('#methodology-scroll').outerHeight() - 25 - bcMargin * 2 - $('.methodology-header').outerHeight();
+      bcHeight = window.innerWidth < 600 ? $('#methodology-scroll').outerHeight() / 2 - $('.methodology-header').outerHeight() - bcMargin * 2 : bcHeight;
+      var lineMargin = window.innerHeight < 600 ? 0 : 40;
+      var x = _$d3Node_32.scaleLinear().domain([0, 65]).range([0, bcWidth]);
+      var y = _$d3Node_32.scaleLinear().domain([-58748.332, 58748.332]).range([bcHeight, 0]);
+      var secondY = _$d3Node_32.scaleLinear().domain([0, 60000]).range([bcHeight, 0]);
       var lineXSel = 'age';
       var lineYSel = 'net_cost';
       var lineGenerator = _$d3Node_32.line().x(function (d) {
