@@ -42,11 +42,11 @@ img:not([alt]) {
   outline: 3px solid red;
 }
 .mobile-only {
-  display: none;
+  display: none !important;
 }
 @media screen and (max-width: 600px) {
   .mobile-only {
-    display: block;
+    display: block !important;
   }
 }
 .w-100 {

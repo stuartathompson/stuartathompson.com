@@ -19409,19 +19409,10 @@ Object.defineProperty(_$d3Node_32, "event", {
 
 var _$main_33 = {};
 // // TODO:
-// tablet size tooltip cut off
 // Reduce size of files by using separate avg file, and then maybe field translations?
-// better opening tooltipX
-// TODO
-// filter dropdown program to what's showing or have it reset
 // REFACTOr
 // dont' need to resassign values in update color always. color for ex. can be done sooner
 // turn off voronoi completely?
-// Browsers
-// FF
-// Safari
-// IE
-// Chrome
 (function () {
   var showVoronoi = false;
 
@@ -20287,7 +20278,6 @@ var _$main_33 = {};
           return d[labelColumn] == randomCircleSelection;
         })[0];
         killTooltipHover = false;
-        console.log('showing', sel);
         showTooltip(sel, true, true, upfrontHighlightsHashed.get(randomCircleSelection));
       } else {
         clearInterval(openingT);
@@ -20453,8 +20443,11 @@ var _$main_33 = {};
           var vtarget = voronoiLabels.filter(function (d) {
             return d.id == id;
           });
+          var vextent = _$d3Node_32.extent(data, function (d) {
+            return d.y;
+          });
           vtarget.each(function (d) {
-            highlightLabel.attr('transform', "translate(" + x(d[xSel]) + "," + (d.y < height / 2 ? height / 2 - 20 : height / 2 + 25) + ")").style('opacity', 1);
+            highlightLabel.attr('transform', "translate(" + x(d[xSel]) + "," + (d.y < height / 2 ? vextent[0] : vextent[1]) + ")").style('opacity', 1);
             highlightLabel.selectAll('text').remove();
             highlightLabel.selectAll('text').data(d.y < height / 2 ? forcedLabelArr.reverse() : forcedLabelArr).enter().append('text').text(function (d) {
               return d;
@@ -20608,25 +20601,25 @@ var _$main_33 = {};
 
     function updateViz() {
       // console.log('** updating **')
-      console.log({
-        applyCheckTo: applyCheckTo,
-        sampleSel: sampleSel,
-        check: check,
-        checkValue: checkValue,
-        checkColumn: checkColumn,
-        showingPrograms: showingPrograms,
-        showingLabels: showingLabels,
-        showingCI: showingCI,
-        showingProgramCI: showingProgramCI,
-        showingAverages: showingAverages,
-        animate: animate,
-        forced: forced,
-        colorBy: colorBy,
-        lastSlide: lastSlide,
-        ySel: ySel,
-        xSel: xSel
-      }); // Process selections to include assumptions
-
+      // console.log({
+      //   applyCheckTo,
+      //   sampleSel,
+      //   check,
+      //   checkValue,
+      //   checkColumn,
+      //   showingPrograms,
+      //   showingLabels,
+      //   showingCI,
+      //   showingProgramCI,
+      //   showingAverages,
+      //   animate,
+      //   forced,
+      //   colorBy,
+      //   lastSlide,
+      //   ySel,
+      //   xSel
+      // })
+      // Process selections to include assumptions
       appendAssumptions(); // Scales
       // Set extent using programs
 
@@ -20981,11 +20974,7 @@ var _$main_33 = {};
       }); // .style('opacity', d => d.opacity)
       // If in and we're highlighting only some parentCategories, add a growing highlight circle animation
 
-      console.log(highlightDots);
-
       if (check != null && highlightDots) {
-        console.log('tarting a dot');
-
         if (showingPrograms && !showingAverages) {
           dataGroup.filter(function (d) {
             return d.thisIn;
@@ -21492,25 +21481,25 @@ var _$main_33 = {};
     // Chart vars
     var bcDataRaw = bcDataArr;
     var bc2DataRaw = bc2DataArr;
-    var bcMargin = window.innerWidth < 600 ? 10 : 5;
+    var bcMargin = window.innerWidth < 600 ? [20, 10, 10, 10] : [5, 5, 5, 5];
     var bcSelector = '.methodology-viz';
     $('.methodology-viz').empty();
     var selectorWidth, selectorHeight;
     _$d3Node_32.select(bcSelector).each(function () {
       bcSelectorWidth = this.getBoundingClientRect().width;
     });
-    var bcWidth = bcSelectorWidth - bcMargin * 2;
-    var bcHeight = $('#methodology-scroll').outerHeight() - 25 - bcMargin * 2 - $('.methodology-header').outerHeight();
-    bcHeight = window.innerWidth < 600 ? $('#methodology-scroll').outerHeight() / 2 - $('.methodology-header').outerHeight() - bcMargin * 2 : bcHeight; // Main svg
+    var bcWidth = bcSelectorWidth - bcMargin[1] - bcMargin[3];
+    var bcHeight = $('#methodology-scroll').outerHeight() - bcMargin[0] - bcMargin[2];
+    $('.methodology-header').outerHeight();
+    bcHeight = window.innerWidth < 600 ? $('#methodology-scroll').outerHeight() / 2 - $('.methodology-header').outerHeight() - bcMargin[0] - bcMargin[2] : bcHeight; // Main svg
 
-    var methSvg = _$d3Node_32.select('.methodology-viz').append('svg').attr('width', bcWidth + bcMargin * 2).attr('height', bcHeight + bcMargin * 2);
+    var methSvg = _$d3Node_32.select('.methodology-viz').append('svg').attr('width', bcWidth + bcMargin[1] + bcMargin[3]).attr('height', bcHeight + bcMargin[0] + bcMargin[2]);
     var bcSvg = methSvg.append('g');
     var bc2Svg = methSvg.append('g');
     var xAxis = bcSvg.append('rect').attr('width', bcWidth).attr('height', 1).attr('fill', axisColor).attr('y', bcHeight / 2 - .5);
     var xAxis = bc2Svg.append('rect').attr('width', bcWidth).attr('height', 1).attr('fill', axisColor).attr('y', bcHeight / 2 - .5);
-    var bcMaxYVal = _$d3Node_32.max(bcDataRaw, function (d) {
-      return Math.abs(d.val);
-    }) * 2;
+    var bcMaxYVal = window.innerWidth < 600 ? 44000 : 22000; //d3.max(bcDataRaw, d => Math.abs(d.val))*2
+
     var bcX = _$d3Node_32.scaleLinear().domain([0, 6]).range([0, bcWidth]);
     var bcH = _$d3Node_32.scaleLinear().domain([0, bcMaxYVal]).range([0, bcHeight / 2]);
     var bcY = _$d3Node_32.scaleLinear().domain([0, bcMaxYVal]).range([bcHeight / 2, 0]);
@@ -21718,7 +21707,7 @@ var _$main_33 = {};
       });
     });
     var chartTitle = methSvg.append('text').text('Net Cost to Government').attr('class', 'chart-title').attr('x', 0).attr('y', 15);
-    var lineChart = methSvg.append('g').attr('transform', "translate(" + bcMargin + ", " + bcMargin + ")");
+    var lineChart = methSvg.append('g').attr('transform', "translate(" + bcMargin[3] + ", " + bcMargin[0] + ")");
 
     function makeLineChart(data) {
       var bcSelector = '.methodology-viz';
@@ -21726,9 +21715,10 @@ var _$main_33 = {};
       _$d3Node_32.select(bcSelector).each(function () {
         bcSelectorWidth = this.getBoundingClientRect().width;
       });
-      var bcWidth = bcSelectorWidth - bcMargin * 2;
-      var bcHeight = $('#methodology-scroll').outerHeight() - 25 - bcMargin * 2 - $('.methodology-header').outerHeight();
-      bcHeight = window.innerWidth < 600 ? $('#methodology-scroll').outerHeight() / 2 - $('.methodology-header').outerHeight() - bcMargin * 2 : bcHeight;
+      var bcWidth = bcSelectorWidth - bcMargin[1] - bcMargin[3];
+      var bcHeight = $('#methodology-scroll').outerHeight() - 25 - bcMargin[0] - bcMargin[2];
+      $('.methodology-header').outerHeight();
+      bcHeight = window.innerWidth < 600 ? $('#methodology-scroll').outerHeight() / 2 - $('.methodology-header').outerHeight() - bcMargin[0] - bcMargin[2] : bcHeight;
       var lineMargin = window.innerHeight < 600 ? 0 : 40;
       var x = _$d3Node_32.scaleLinear().domain([0, 65]).range([0, bcWidth]);
       var y = _$d3Node_32.scaleLinear().domain([-58748.332, 58748.332]).range([bcHeight, 0]);
@@ -21804,7 +21794,7 @@ var _$main_33 = {};
   function processBCData(bcData) {
     for (var i = 0; i < bcData.length; i++) {
       d = bcData[i];
-      d.labelArr = d.item.split(' ');
+      d.labelArr = d.item.split('<br />');
     }
 
     return bcData;
