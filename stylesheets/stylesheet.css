@@ -26,9 +26,9 @@ a:hover {
 .inner{
 	margin:0 auto;
 	margin-top:15px;
-	max-width:800px;
+	max-width:600px;
 	display: flex;
-	flex-direction: row;
+	flex-direction: column;
 }
 @media screen and (max-width:600px){
 	.inner{
