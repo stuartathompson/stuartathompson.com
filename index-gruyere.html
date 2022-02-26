@@ -1,0 +1,1059 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>BreadScheduler — King Arthur Flour</title>
+    <style type="text/css">
+      body#breadscheduler-body{
+        padding:0;
+        margin:0;
+      }
+      #breadscheduler{
+        background:white;
+      }
+      #breadscheduler-viz-wrapper{
+        position:relative;
+      }
+      #breadscheduler-agenda {
+        display:none;
+      }
+      #breadscheduler-agenda table{
+        width:100%;
+      }
+      #breadscheduler-agenda table tr td{
+        border-top:1px solid #eee;
+        padding:7px;
+      }
+      #breadscheduler-agenda table tr td:first-child{
+        font-weight:bold;
+        color:rgb(218, 26, 50);
+      }
+      .cursor-grab {
+          cursor: grab;
+      }
+      #breadscheduler-controls{
+        padding: 15px 0;
+        display: flex;
+        width: 100%;
+        flex-direction: row;
+        flex-wrap: wrap;
+        align-content: center;
+        justify-content: space-between;
+        align-items: center;
+      }
+      #breadscheduler{
+        font:300 1rem/1.56 brandon-grotesque, sans-serif;
+      }
+      #breadscheduler .breadscheduler-dropdown{
+        display:inline-block;
+        margin-left:5px;
+      }
+      #breadscheduler button:last-child{
+        padding-right:0;
+        margin-right:0 !important;
+      }
+      #breadscheduler button.button-active{
+        color:rgb(218, 26, 50);
+      }
+      #breadscheduler button svg{
+        width:12px;
+        margin: 0 3px -9px 0;
+        padding: 2px 0;
+      }
+      #breadscheduler-viz svg{
+      }
+      #breadscheduler .active-option, #breadscheduler button{
+        padding:10px 20px;
+        border:1.008px solid rgb(218, 26, 50);
+        text-transform:uppercase;
+        font-size:12px;
+        text-align:center;
+        margin:0;
+        background:white;
+        transition: .5s all;
+        cursor:pointer;
+        position:relative;
+        z-index:20;
+        line-height:1;
+      }
+      #breadscheduler button{
+        border:0;
+        padding:0;
+        margin:0 5px;
+      }
+      #breadscheduler .breadscheduler-button-active{
+        color: rgb(218, 26, 50);
+      }
+      #breadscheduler .breadscheduler-dropdown[data-classed="breadscheduler-daypick"]{
+        display:none;
+      }
+      #breadscheduler .breadscheduler-options{
+        border:1.008px solid #d1d1d1;
+        font-size:12px;
+        text-align:center;
+        margin:0;
+        background:white;
+        transition: .5s all;
+        cursor:pointer;
+        outline: none;
+        position:absolute;
+        display:none;
+        margin-top: -1px;
+        z-index: 10;
+      }
+      #breadscheduler .breadscheduler-options-cutoff{
+        max-height:200px;
+        overflow-y:scroll;
+        overflow-x:hidden;
+      }
+      #breadscheduler .breadscheduler-dropdown.breadscheduler-showing .breadscheduler-options{
+        display:block;
+      }
+      #breadscheduler .breadscheduler-options .breadscheduler-option{
+        text-transform:none;
+        text-align:left;
+        padding:10px 20px;
+        border-top:1px solid #eee;
+        display:block;
+      }
+      #breadscheduler #breadscheduler-start-end-select{
+        margin-right:0;
+      }
+      /* #breadscheduler #breadscheduler-time-select .active-option{
+        background-image:url('time.png');
+        background-size:20px 20px;
+        background-repeat:no-repeat;
+        background-position:10px 8px;
+        padding-left:32px;
+      } */
+      #breadscheduler .active-option:hover, #breadscheduler button:hover{
+        color: rgb(218, 26, 50);
+        border-color:#000;
+      }
+      #breadscheduler option{
+        text-transform: none !important;
+      }
+      #breadscheduler .domain{
+        display:none;
+      }
+      #breadscheduler .tick text{
+        font-size:14px;
+      }
+      #breadscheduler .label-weekday{
+        font-size:14px;
+        opacity:.5;
+      }
+      #breadscheduler-credit{
+        text-align:left;
+        font-size:14px;
+        margin-top:5px;
+        border-top:1px solid #eee;
+        padding-top:10px;
+      }
+      #breadscheduler-credit a{
+        color:#7d7d7d;
+        text-decoration: none;
+      }
+      #breadscheduler-credit a span{
+        font-family:serif;
+        font-weight:600;
+      }
+      #breadscheduler .step{
+        cursor:grab;
+      }
+      #breadscheduler .shadow-step-wrap{
+        pointer-events:none;
+      }
+      #breadscheduler .reset-button{
+        bottom:10px;
+        left:0px;
+        margin:0;
+        z-index: 99;
+        position:absolute;
+        background-color:#eee;
+        padding:8px;
+        font-size:12px;
+      }
+      #breadscheduler .reset-button:hover{
+        background-color:white;
+      }
+
+      @media screen and (min-width:600px){
+        .no-touch{
+            pointer-events: none;
+        }
+      }
+    </style>
+  </head>
+  <body id="breadscheduler-body">
+    <div id="breadscheduler">
+      <div id="breadscheduler-controls">
+        <div class="breadscheduler-timer-controls">
+            I want to
+            <div tabindex="1" id="breadscheduler-start-end-select" class="breadscheduler-dropdown">
+              <button class="option active-option">
+                  Start
+              </button>
+              <div class="breadscheduler-options">
+                <a tabindex="2" class="breadscheduler-option" data-toggle="start">Start</a>
+                <a tabindex="3" class="breadscheduler-option" data-toggle="finish">Finish</a>
+              </div>
+            </div>
+
+            <div tabindex="4" id="breadscheduler-time-select" class="breadscheduler-dropdown">
+              <div class="option active-option">
+                  At the ideal time
+              </div>
+              <div class="breadscheduler-options">
+                <a tabindex="5" class="breadscheduler-option" data-toggle="ideal">At the ideal time</a>
+                <a tabindex="6" class="breadscheduler-option" data-toggle="now">Right now</a>
+                <a tabindex="7" class="breadscheduler-option" data-toggle="tonight">Tonight</a>
+                <a tabindex="8" class="breadscheduler-option" data-toggle="tomorrow_morning">Tomorrow morning</a>
+                <a tabindex="9" class="breadscheduler-option" data-toggle="tomorrow_night">Tomorrow night</a>
+                <a tabindex="10" class="breadscheduler-option" data-toggle="custom">Pick a time</a>
+              </div>
+            </div>
+
+            <div tabindex="11" id="breadscheduler-day-select" class="breadscheduler-dropdown" data-classed="breadscheduler-daypick">
+              <div class="option active-option">
+                  Today
+              </div>
+              <div class="breadscheduler-options">
+                <a tabindex="12" class="breadscheduler-option" data-toggle="today">Today</a>
+                <a tabindex="13" class="breadscheduler-option" data-toggle="tomorrow">Tomorrow</a>
+                <a tabindex="14" class="breadscheduler-option" data-toggle="yesterday">Yesterday</a>
+              </div>
+            </div>
+
+            <div tabindex="15" id="breadscheduler-hour-select" class="breadscheduler-dropdown" data-classed="breadscheduler-daypick">
+              <div class="option active-option">
+                  12 p.m.
+              </div>
+              <div class="breadscheduler-options breadscheduler-options-cutoff">
+                <a tabindex="16" class="breadscheduler-option" data-toggle="0">12 a.m.</a>
+                <a tabindex="17" class="breadscheduler-option" data-toggle="1">1 a.m.</a>
+                <a tabindex="18" class="breadscheduler-option" data-toggle="2">2 a.m.</a>
+                <a tabindex="19" class="breadscheduler-option" data-toggle="3">3 a.m.</a>
+                <a tabindex="20" class="breadscheduler-option" data-toggle="4">4 a.m.</a>
+                <a tabindex="21" class="breadscheduler-option" data-toggle="5">5 a.m.</a>
+                <a tabindex="22" class="breadscheduler-option" data-toggle="6">6 a.m.</a>
+                <a tabindex="23" class="breadscheduler-option" data-toggle="7">7 a.m.</a>
+                <a tabindex="24" class="breadscheduler-option" data-toggle="8">8 a.m.</a>
+                <a tabindex="25" class="breadscheduler-option" data-toggle="9">9 a.m.</a>
+                <a tabindex="26" class="breadscheduler-option" data-toggle="10">10 a.m.</a>
+                <a tabindex="27" class="breadscheduler-option" data-toggle="11">11 a.m.</a>
+                <a tabindex="28" class="breadscheduler-option" data-toggle="12">12 p.m.</a>
+                <a tabindex="29" class="breadscheduler-option" data-toggle="13">1 p.m.</a>
+                <a tabindex="30" class="breadscheduler-option" data-toggle="14">2 p.m.</a>
+                <a tabindex="31" class="breadscheduler-option" data-toggle="15">3 p.m.</a>
+                <a tabindex="32" class="breadscheduler-option" data-toggle="16">4 p.m.</a>
+                <a tabindex="33" class="breadscheduler-option" data-toggle="17">5 p.m.</a>
+                <a tabindex="34" class="breadscheduler-option" data-toggle="18">6 p.m.</a>
+                <a tabindex="35" class="breadscheduler-option" data-toggle="19">7 p.m.</a>
+                <a tabindex="36" class="breadscheduler-option" data-toggle="20">8 p.m.</a>
+                <a tabindex="37" class="breadscheduler-option" data-toggle="21">9 p.m.</a>
+                <a tabindex="38" class="breadscheduler-option" data-toggle="22">10 p.m.</a>
+                <a tabindex="39" class="breadscheduler-option" data-toggle="23">11 p.m.</a>
+              </div>
+            </div>
+        </div>
+        <div id="breadscheduler-view-select">
+          <button tabindex="40" data-toggle="scheduler" class="button button-active">
+            Scheduler
+          </button>
+          <button tabindex="41" data-toggle="agenda" class="button">
+            Agenda
+          </button>
+        </div>
+      </div>
+      <div id="breadscheduler-viz-wrapper">
+        <button class="reset-button">Reset</button>
+        <div id="breadscheduler-viz"></div>
+      </div>
+      <div id="breadscheduler-agenda">
+      </div>
+      <div id="breadscheduler-credit">
+          <a href="://breadscheduler.com" target="_blank">Created with <span>BreadScheduler.com</span></a>
+      </div>
+    </div>
+  </body>
+  <!-- Moment.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js" integrity="sha512-qTXRIMyZIFb8iQcfjXWCO8+M5Tbc38Qi5WzdPOYZHIlZpzBHG3L3by84BBBOiRGiEb7KKtAOAs5qYdUiZiQNNQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <!-- D3.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.3.0/d3.min.js" integrity="sha512-NMhzM2RHzbCRO0s5VPaRC+2bW6nmNXimzC9p5sp2x19M+zzuSJ2T50dEQ7hpHkNjnX1mt8nQg1NNthwRZgsoIg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+	<script type="text/javascript">
+    (function(){
+
+         var recipe = {"title":"Gruyere Stuffed Crusty Loaves","description":"","hide":false,"totalRecipeLength":0,"steps":[{"category":"Make starter and ferment","step":"","ingredients":[],"timeBreak":[{"timeMin":"1440","timeMax":"1440","activePassive":"active"}]},{"category":"Make dough","step":"","ingredients":[],"timeBreak":[{"timeMin":"15","timeMax":"15","activePassive":"active"}]},{"category":"Rise","step":"","ingredients":[],"timeBreak":[{"timeMin":"90","timeMax":"120","activePassive":"active"}]},{"category":"Shape, fill and cut","step":"","ingredients":[],"timeBreak":[{"timeMin":"30","timeMax":"30","activePassive":"active"},{"timeMin":"","timeMax":"","activePassive":"active"}]},{"category":"Rise and preheat","step":"","ingredients":[],"timeBreak":[{"timeMin":"60","timeMax":"90","activePassive":"active"}]},{"category":"Bake","step":"","ingredients":[],"timeBreak":[{"timeMin":"30","timeMax":"30","activePassive":"active"}]},{"category":"Cool","step":"","ingredients":[],"timeBreak":[{"timeMin":"10","timeMax":"10","activePassive":"active"}]}],"recommendedTimes":[{"startTime":"17"}],"ingredients":[{"item":"","ingredients":[{"amount":"","ingredient":""}]}],"images":null}
+
+
+        var that = this
+        var state, skedStartDate, selectedTime
+
+        var customTime = 0
+        var customDay = 0
+        var customShowing = false
+        var selectedStartEnd = 'start'
+        var buttonSelected = 'ideal'
+
+        var dateLabels = {
+          'ideal': 'at the ideal time',
+          'now': 'right now',
+          'tonight': 'tonight',
+          'tomorrow_morning': 'tomorrow morning',
+          'tomorrow_night': 'tomorrow night',
+          'custom': 'pick a time'
+        }
+
+        var day = function (step) {
+          var showDate = true
+          var i = 0
+          var that = this
+          for (var thisStep of recipe.steps) {
+            if (thisStep === step) {
+              // This is the step, so is the start time different than the last?
+              showDate = i === 0 || (recipe.steps[i - 1] && moment(recipe.steps[i - 1].startTime).format('dddd') !== moment(step.startTime).format('dddd'))
+            }
+            i++
+          }
+          return showDate ? moment(step.startTime).format('dddd') : ''
+        }
+
+        var hoursToTime = function (hours) {
+          return isNaN(hours) ? hours : moment().startOf('day').add(hours, 'h').format('h A').replace('AM', 'a.m.').replace('PM', 'p.m.')
+        }
+
+        var time = function (time) {
+          return moment(time).format('h:mm a')
+        }
+
+        function makeAgenda(){
+          var parent = d3.select('#breadscheduler-agenda')
+          parent.html('')
+          var table = parent.append('table')
+          var rows = table.selectAll('tr').data(recipe.steps).enter().append('tr')
+          var dayCell = rows.append('td').text(d => day(d))
+          var startTime = rows.append('td').text(d => time(d.startTime))
+          var category = rows.append('td').text(d => d.category)
+        }
+
+        function makeViz(remaking){
+
+          this.commit = (attr, set) => {
+            // console.log({attr, set})
+          }
+
+          this.filters = {
+            time: (time) => {
+              return moment(time).format('h:mm a')
+            }
+          }
+
+          var getThisTimeBreak = (step, timeBreak, i) => {
+            var arr = step.timeBreak.filter((k, j) => {
+              return j < i
+            })
+            var ret = 0
+            for (var a of arr) {
+              ret += Number(a.timeMin)
+            }
+            return ret
+          }
+
+          var getIdealStepTime = (timeBreakStep) => {
+            // Gets the ideal amount of time in each step by adding up ideal OR min time breaks
+            // This is used to adjust following step start times by the amount of time
+            // taken by the previous step
+            // This uses timeBreaks because each step can have multiple timebreaks
+            var ret = 0
+            for (var step of timeBreakStep) {
+              ret += step.timeIdeal ? Number(step.timeIdeal) : Number(step.timeMin)
+            }
+            return ret
+          }
+
+          var appendShadowTimeToStep = (steps) => {
+            // Adds a minute-based time to the step so we can calculate fit according to time. This is needed to make sure the text all fits
+            recipe.totalRecipeLength
+            for(var step of steps){
+
+            }
+          }
+
+
+          dateDefaults = {
+            'start_ideal': recipe.recommendedTimes && recipe.recommendedTimes[0].startTime ? moment().startOf('day').add(recipe.recommendedTimes[0].startTime, 'h') : moment(),
+            'start_now': moment(),
+            'start_tonight': moment().startOf('day').add(19, 'h'),
+            'start_tomorrow_morning': moment().add(1, 'd').startOf('day').add(9, 'h'),
+            'start_tomorrow_night': moment().add(1, 'd').startOf('day').add(19, 'h'),
+            'finish_ideal': recipe.recommendedTimes && recipe.recommendedTimes[0] ? moment().startOf('day').add(recipe.recommendedTimes[0].startTime, 'h').diff(moment(), 'm') < 0 ? moment().startOf('day').add(1, 'd').add(recipe.recommendedTimes[0].startTime, 'h') : moment().startOf('day').add(recipe.recommendedTimes[0].startTime, 'h') : moment(),
+            'finish_now': moment().subtract(recipe.totalRecipeLength, 'm'),
+            'finish_tonight': moment().startOf('day').add(19, 'h').subtract(recipe.totalRecipeLength, 'm'),
+            'finish_tomorrow_morning': moment().add(1, 'd').startOf('day').add(9, 'h').subtract(recipe.totalRecipeLength, 'm'),
+            'finish_tomorrow_night': moment().add(1, 'd').startOf('day').add(19, 'h').subtract(recipe.totalRecipeLength, 'm')
+          }
+
+          // console.log(dateDefaults)
+          var that = this
+          var data = recipe.steps
+
+          // Reset start time now that recipe is fetched
+          if (!remaking) {
+            dateDefaults['start_ideal'] = recipe.recommendedTimes && recipe.recommendedTimes[0].startTime ? moment().startOf('day').add(recipe.recommendedTimes[0].startTime, 'h').diff(moment(), 'm') < 0 ? moment().startOf('day').add(1, 'd').add(recipe.recommendedTimes[0].startTime, 'h') : moment().startOf('day').add(recipe.recommendedTimes[0].startTime, 'h') : moment()
+
+            dateDefaults['finish_ideal'] = recipe.recommendedTimes && recipe.recommendedTimes[0] ? moment().startOf('day').add(recipe.recommendedTimes[0].startTime, 'h').diff(moment(), 'm') < 0 ? moment().startOf('day').add(1, 'd').add(recipe.recommendedTimes[0].startTime, 'h') : moment().startOf('day').add(recipe.recommendedTimes[0].startTime, 'h') : moment()
+
+            // Default to the ideal start time
+            skedStartDate = dateDefaults['start_ideal']
+          }
+
+          // Clear content
+          document.getElementById('breadscheduler-viz').innerHTML = ''
+
+          const numberOfSteps = data.length
+          const margin = 50
+          let widthMargin = 50
+          const barHeight = 15
+          const barMargin = 30
+          const height = (barHeight * numberOfSteps) + (barMargin * numberOfSteps) + 100
+
+          var width = document.getElementById('breadscheduler-viz').offsetWidth
+          const primary = '#6F757B'
+          const hover = '#4e4c4c'
+          const color = '#333'//#da1a32'
+          const secondary = '#bababa'
+
+          // Make SVG
+          const svgW = d3.select('#breadscheduler-viz')
+            .append('svg')
+            .attr('width', width)
+            .attr('height', height + margin)
+
+
+
+          let minSkedDate
+          let maxSkedDate
+
+          var processData = (reset) => {
+            // Sets the start time of the viz, which affects all future start times as part of the following data loop
+            minSkedDate = skedStartDate ? moment(skedStartDate) : moment(data[0].startTime)
+            // Starting value ONLY for max sked. This is added to in the next loop
+            maxSkedDate = moment(minSkedDate)
+
+            // Add previous minMax times together based on datum.startTime or minSkedDate
+            var i = 0
+            var runningStartTime = 0
+            var runningEndTime = 0
+            for (var datum of data) {
+              // First step, so no previous steps on which to affect this start time
+              if (i === 0) {
+                datum.startTime = datum.startTime ? moment(datum.startTime) : moment(minSkedDate)
+                datum.startTimeMinutes = 0
+                datum.endTimeMinutes = getIdealStepTime(datum.timeBreak)
+              } else {
+                // Determine this start time based on the previous timeBreaks
+                datum.startTime = datum.startTime ? moment(datum.startTime) : moment(data[i - 1].startTime).add(getIdealStepTime(data[i - 1].timeBreak), 'm')
+                datum.startTimeMinutes = data[i - 1].endTimeMinutes
+                datum.endTimeMinutes = data[i - 1].endTimeMinutes + getIdealStepTime(datum.timeBreak)
+                maxSkedDate = moment(datum.startTime).add(getIdealStepTime(datum.timeBreak), 'm')
+              }
+              i++
+            }
+          } // end process data
+
+          processData()
+
+          that.processData = () => processData()
+
+          const x = d3.scaleTime().domain([minSkedDate, maxSkedDate]).range([0, width-widthMargin])
+
+          const shadowX = d3.scaleLinear().domain([0, maxSkedDate.diff(minSkedDate, 'm')]).range([0, width])
+
+          const xHour = d3.scaleLinear().domain([0, maxSkedDate.diff(minSkedDate, 'm')]).range([0, width])
+
+          const tickX = d3.scaleTime().domain([minSkedDate, maxSkedDate.add(12,'h')]).range([0, width+xHour(12)])
+          const tickXHour = d3.scaleTime().domain([minSkedDate, maxSkedDate.add(12,'h')]).range([0, width+xHour(12)])
+
+          const y = d3.scaleLinear().domain([0, data.length]).range([15, height - 15])
+
+          const svg = svgW.append('g')
+            .attr('transform', `translate(${0}, ${margin})`)
+
+          const topBarFill = 'white'
+
+          svg.append('rect')
+            .attr('width', width)
+            .attr('height', 1)
+            .attr('y', -margin)
+            .attr('fill', '#f8f5f0')
+
+          // Axis for each day's tick and label
+          var xAxisDays = svg.append('g')
+            .attr('transform', 'translate(0,' + -15 + ')')
+            .style('font-weight', 600)
+            .style('opacity', .5)
+
+          // Axis for regular time
+          var xAxis = svg.append('g')
+            .attr('transform', 'translate(0,' + 0 + ')')
+            .style('opacity', .5)
+          var xAxisTicks = svg.append('g')
+            .attr('transform', 'translate(0,' + 0 + ')')
+            .style('opacity', .5)
+            .style('fill', 'red')
+            .attr('class', 'xaxisticks')
+          // Axis for each hour tick
+          var xAxisHour = svg.append('g')
+            .attr('opacity', 0.5)
+            .attr('transform', 'translate(0,' + 0 + ')')
+            .style('opacity', .5)
+
+          // vertical bar for current time
+          var currentTime = svg.append('g')
+            .attr('transform', `translate(${x(moment())},-5)`)
+
+          // currentTimeBar
+          currentTime.append('rect')
+            .attr('height', height + 15)
+            .attr('width', 1)
+            .attr('fill', color)
+            .attr('y', -5)
+
+          // currentTimeCircle
+          currentTime.append('circle')
+            .attr('r', 5)
+            .attr('cx', 0)
+            .attr('fill', color)
+
+          /* -
+          /* - Dragging the top bar
+          /* -   - */
+          var dragging = false
+          svg.append('rect')
+            .attr('width', width + margin)
+            .attr('height', margin - 10)
+            .attr('fill', 'red')
+            .attr('opacity', 0)
+            .attr('x', -margin / 2)
+            .attr('y', -margin)
+            .call(d3.drag()
+              .on('start', dragVizTimeStarted)
+              .on('drag', draggedVizTime)
+              .on('end', dragVizTimeEnded))
+          /* -
+          /* - Dragging the main bar area
+          /* -   - */
+          svg.append('rect')
+            .attr('width', width + margin)
+            .attr('height', height + 15)
+            .attr('opacity', 0)
+            .attr('x', -margin / 2)
+            .attr('y', -10)
+            .call(d3.drag()
+              .on('start', dragVizTimeStarted)
+              .on('drag', draggedVizTime)
+              .on('end', dragVizTimeEnded))
+
+          var startX = 0
+          var startDateSked = minSkedDate
+          var endDateSked = maxSkedDate
+          function dragVizTimeStarted (d, i) {
+            // console.log(d3.event, d)
+            startX = x.invert(d.x)
+            startDateSked = minSkedDate
+            endDateSked = maxSkedDate
+          }
+          function draggedVizTime (d, i) {
+            // Get difference between start and current pos in hours
+            var diff = moment(startX).diff(moment(x.invert(d.x)), 'm')
+            minSkedDate = startDateSked.add(diff, 'm')
+            maxSkedDate = endDateSked.add(diff, 'm')
+            updateChart(false, true)
+          }
+
+          function dragVizTimeEnded () {
+          }
+
+          /* -
+          /* - Dragging the step bars themselves
+          /* -   - */
+          const stepWrap = svg.selectAll('g.step-wrap')
+            .data(data).enter()
+          .append('g')
+              .attr('class', 'step-wrap')
+
+          const shadowStepWrap = svg.selectAll('g.shadow-step-wrap')
+            .data(data).enter()
+          .append('g')
+              .attr('class', 'shadow-step-wrap')
+
+
+          const steps = stepWrap.append('g')
+            .attr('class', 'step')
+            .call(d3.drag()
+              .on('start', dragstarted)
+              .on('drag', dragged)
+              .on('end', function (d, i) { dragended(d, i) }))
+
+          const shadowSteps = shadowStepWrap.append('g')
+            .attr('class', 'shadow-step')
+
+          const stepsGroup = steps.append('g')
+
+          const shadowStepsGroup = shadowSteps.append('g')
+            .attr('class', 'shadow-step-group')
+
+          // Hashing
+          svg
+            .append('defs')
+            .append('pattern')
+              .attr('id', 'diagonalHatch')
+              .attr('patternUnits', 'userSpaceOnUse')
+              .attr('width', 4)
+              .attr('height', 4)
+            .append('path')
+              .attr('d', 'M-1,1 l2,-2 M0,4 l4,-4 M3,5 l2,-2')
+              .attr('stroke', '#333')
+              .attr('stroke-width', 1)
+
+          // Add each timebreak from this step in a horizontal fashion
+          var stepsStack = stepsGroup.selectAll('.time-break-steps')
+            .data(d => d.timeBreak).enter()
+              .append('g')
+                .attr('transform', function (d, i) {
+                  var lastStepTimeMax = getThisTimeBreak(d3.select(this.parentNode).data()[0], d, i)
+                  return `translate(${xHour(lastStepTimeMax)}, ${y(0)})`
+                })
+
+          var shadowStepsStack = shadowStepsGroup.selectAll('.shadow-time-break-steps')
+            .data(d => d.timeBreak).enter()
+              .append('g')
+              .attr('class', 'shadow-time-break-steps')
+                .attr('transform', function (d, i) {
+                  var lastStepTimeMax = getThisTimeBreak(d3.select(this.parentNode).data()[0], d, i)
+                  return `translate(${xHour(lastStepTimeMax)}, ${y(0)})`
+                })
+
+          var stepsMin = stepsStack
+              .append('rect')
+                .attr('stroke', 'white')
+                .attr('fill', d => color)
+                .attr('height', barHeight)
+          var stepsMax = stepsStack
+              .append('rect')
+                .attr('stroke', 'white')
+                .attr('opacity', 0.5)
+                .attr('fill', d => color)
+                .attr('height', barHeight)
+
+          stepsGroup
+            .on('mouseover', function (d, i) {
+              d3.selectAll('rect.step-min-rect').filter((k, j) => {
+                return j >= i
+              })
+                .attr('fill', hover)
+            })
+            .on('mousedown', function (d, i) {
+              d3.selectAll('rect.step-min-rect').filter((k, j) => {
+                return j >= i
+              })
+                .attr('fill', hover)
+              stepsGroup.filter((k, j) => {
+                return j >= i
+              })
+                .attr('transform', 'translate(0, -2.5)')
+            })
+            .on('mouseup', function (d, i) {
+              // console.log('mouseup')
+              stepsGroup.filter((k, j) => {
+                return j >= i
+              })
+                .attr('transform', 'translate(0, -5)')
+            })
+            .on('mouseout', function (d, j) {
+              // console.log('ok')
+              if (!dragging) {
+                d3.selectAll('rect.step-min-rect')
+                  .attr('fill', primary)
+              }
+            })
+
+          var stepStartX = null
+          function dragstarted (d, step) {
+            dragging = true
+            stepStartX = x.invert(d.x)
+          }
+          function dragged (d, step) {
+            const e = steps.nodes();
+            let i = e.indexOf(this);
+            // get change in minutes
+            let dx = d.x//Math.round(d.x / 10) * 10;
+
+            var diff = moment(x.invert(dx)).diff(moment(stepStartX), 's')
+            stepStartX = moment(x.invert(dx))
+
+            // Move previous items
+            steps.filter((d, j) => j < i)
+              .each((d, j) => {
+                var targetStartTime = step.startTime.clone().add(diff, 's')
+                var thisStartTime = d.startTime.clone().add(diff, 's')
+                // If we've moved less than the start of the previous one, so we need to move it to align
+                if (targetStartTime < thisStartTime) {
+                  d.startTime = targetStartTime
+                }
+              })
+
+            // Move following in sync
+            steps.filter((d, j) => j > i)
+              .each(d => {
+                d.startTime.add(diff, 's')
+              })
+            // Modify this step's start date by this amount
+            step.startTime.add(diff, 's')
+            updateChart(false, true)
+          }
+          function dragended (step, i) {
+            dragging = false
+            stepsGroup.filter((k, j) => {
+              return j >= i
+            })
+              .attr('transform', 'translate(0, 0)')
+            svg.selectAll('rect.step-min-rect')
+              .attr('fill', primary)
+            // console.log('end')
+            updateChart(false, true)
+            refitChart()
+          }
+
+          var stepText = stepsGroup.append('text')
+            .attr('y', barHeight / 1.25)
+            .style('fill', '#000')
+            .style('font-size', 16)
+
+          var shadowStepText = shadowStepsGroup.append('text')
+            .attr('y', barHeight / 1.25)
+            .style('fill', '#000')
+            .style('opacity', 0)
+            .style('font-size', 16)
+
+
+          var extraTime = 0
+          var applyRefit = false
+          function fitShadowText(animate) {
+            function refitByText(){
+              // Get position of longest text element so it's always on screen
+              var widthMarginCoordinates = 0
+              widthMargin = 0
+              for(var step of steps){
+                widthMarginCoordinates = d3.max([widthMarginCoordinates, shadowX(d3.select(step).datum().startTimeMinutes) +  d3.select(step).select('text').node().getComputedTextLength()+15])
+              }
+              widthMargin = widthMarginCoordinates - width
+              console.log({widthMargin})
+              if(widthMargin > 0){
+                applyRefit = true
+                updateChart(animate)
+              }
+            }
+            refitByText()
+          }
+
+          // fitShadowText()
+          function refitChart () {
+            skedStartDate = null
+            that.processData(false)
+
+            updateChart(true)
+          }
+
+          function updateChart (animate, noPad) {
+            // console.log('updating', animate, noPad)
+
+            width = document.getElementById('breadscheduler-viz').offsetWidth
+            svgW
+              .attr('width', width)
+
+            // Reset scales
+            x.domain([minSkedDate, maxSkedDate]).range([0, width-widthMargin])
+
+            xHour.domain([0, maxSkedDate.diff(minSkedDate, 'm')]).range([0, width-widthMargin])
+
+            var minutesToAdd = moment(x.invert(widthMargin)).diff(moment(minSkedDate), 'm')
+            // console.log({minutesToAdd})
+            tickX.domain([minSkedDate, moment(maxSkedDate).add(minutesToAdd, 'm')]).range([0, width])
+
+            y.domain([0, data.length]).range([15, height - 15])
+
+            xAxis.transition().duration(animate ? 1000 : 0).call(d3.axisTop(x).ticks(0).tickFormat(''))
+            xAxisHour.transition().duration(animate ? 1000 : 0).call(d3.axisTop(x).tickFormat('').ticks(0))
+            xAxisDays.transition().duration(animate ? 1000 : 0).call(d3.axisTop(x).ticks(d3.timeDay.every(1)).tickFormat(d3.timeFormat('%A')))
+            xAxisTicks.transition().duration(animate ? 1000 : 0).call(d3.axisTop(tickX).ticks(10).tickFormat(d3.timeFormat('%-I %p')))
+
+            xAxisDays.selectAll('line').transition().duration(animate ? 1000 : 0)
+              .attr('y1', 20)
+              .attr('y2', height + 30)
+              .attr('stroke-width', 2)
+              .attr('opacity', 0.12)
+
+            xAxisDays.selectAll('text').transition().duration(animate ? 1000 : 0)
+              .attr('opacity', d => {
+                return x(d) < 30 ? 0 : 1
+              })
+
+            xAxis.selectAll('.tick line').remove()
+            xAxisHour.selectAll('.tick line').remove()
+            xAxisTicks.selectAll('.tick line').transition().duration(animate ? 1000 : 0)
+              .attr('y1', 5)
+              .attr('y2', height + 15)
+              .attr('opacity', 0.15)
+
+            svg.selectAll('.tick text').transition().duration(animate ? 1000 : 0)
+              .attr('y', -5)
+
+            currentTime
+              .transition().duration(animate ? 1000 : 0)
+              .attr('transform', `translate(${x(moment())},-5)`)
+
+            steps
+              .transition().duration(animate ? 1000 : 0).delay((d, i) => animate ? 15 * i : 0)
+              .attr('transform', (d, i) => {
+                var xTime = d.startTime
+                // console.log(xTime, x(xTime))
+                return `translate(${x(xTime)}, ${y(i)})`
+              })
+
+            stepsStack
+              .attr('transform', function (d, i) {
+                var lastStepTimeMax = getThisTimeBreak(d3.select(this.parentNode).data()[0], d, i)
+                return `translate(${xHour(lastStepTimeMax)}, ${y(0)+5})`
+              })
+
+            stepsMin
+              .transition().duration(animate ? 1000 : 0)
+              .attr('width', d => {
+                return xHour(d.timeMin)
+              })
+            stepsMax
+              .transition().duration(animate ? 1000 : 0)
+              .attr('width', d => xHour(d.timeMax))
+
+            stepText
+              .text((d, i) => {
+                return d.category + ' at ' + this.filters.time(d.startTime)
+              })
+              .style('paint-order', 'stroke')
+              .style('stroke', 'white')
+              .style('stroke-width', 1)
+
+            this.commit('startDate', moment(data[0].startTime))
+            this.commit('endDate', moment(data[data.length - 1].startTime).add(data[data.length - 1].timeBreak[0].timeMax, 'm'))
+
+            // Adjust chart slightly to fit text, now that the text is fitting
+            if(applyRefit === false){
+              fitShadowText(animate)
+            } else {
+              applyRefit = false
+            }
+          } // end updateChart()
+
+          that.updateChart = function (params) {
+            updateChart(params)
+          }
+
+          svg.append('rect')
+            .attr('width', width)
+            .attr('height', height)
+            .attr('fill', 'transparent')
+            .attr('class', 'no-touch')
+
+          updateChart()
+          refitChart()
+
+          setInterval(() => {
+            currentTime
+              .transition()
+              .attr('transform', `translate(${x(moment())},-5)`)
+          }, 1000 * 60)
+          // console.log(window)
+          if (window) d3.select(window).on('resize.updatesvg', updateChart(false, false))
+
+        }
+        function initChart(){
+            //all your code for initChart here
+        };
+
+      function resetViz(){
+        var data = recipe.steps // this.$store.state.recipe.steps
+        skedStartDate = dateDefaults.start_ideal || moment()
+        selectedTime = dateDefaults.start_ideal ? 'at the ideal time' : 'right now'
+        for (var datum of data) {
+          datum.startTime = datum === data[0] ? skedStartDate : null
+        }
+        customShowing = false
+        // Clear from local storage memory
+        window.localStorage.removeItem(recipe._id)
+        // this.makeViz()
+        that.processData()
+        that.updateChart(true)
+        makeAgenda()
+      }
+
+      makeViz();
+      makeAgenda();
+
+      var dropdownOpen = false
+      var startEndOpen = false
+      var timeSelectOpen = false
+
+      function openDropdown(parent){
+        d3.selectAll('#breadscheduler .breadscheduler-options').style('display', 'none')
+        parent.select('.breadscheduler-options').style('display','inline-block')
+        dropdownOpen = true
+      }
+      function closeDropdown(parent, text){
+        // console.log('closing', text)
+        d3.selectAll('#breadscheduler .breadscheduler-options').style('display','none')
+        parent.select('.active-option').text(text)
+        dropdownOpen = false
+      }
+
+      function toggleButton(sel){
+        // console.log('ideal,now,tonight,tomorrow_morning,tomorrow_night'.split(',').includes(sel), {sel, dateDefaults, dateLabels})
+        // Modify visibility
+        if(sel === 'custom'){
+          d3.selectAll('div[data-classed="breadscheduler-daypick"]').style('display','inline-block')
+          customShowing = true
+        } else if ('ideal,now,tonight,tomorrow_morning,tomorrow_night'.split(',').includes(sel)){
+          d3.selectAll('div[data-classed="breadscheduler-daypick"]').style('display','none')
+          customShowing = false
+        }
+        // Process hours, if they are hours
+        if (customShowing) {
+          if(sel == 'today' || sel =='tomorrow' || sel == 'yesterday'){
+            customDay = sel === 'today' ? 0 : sel === 'tomorrow' ? 1 : sel === 'yesterday' ? -1 : 0
+          } else if(!isNaN(parseInt(sel))){
+            customTime = parseInt(sel)
+          }
+        }
+        if (sel === 'scheduler' || sel === 'agenda'){
+          if(sel === 'scheduler'){
+            // Rebuild chart
+            d3.select('#breadscheduler-viz-wrapper').style('display','block')
+            d3.select('#breadscheduler-agenda').style('display','none')
+            makeViz()
+          } else {
+            d3.select('#breadscheduler-viz-wrapper').style('display','none')
+            d3.select('#breadscheduler-agenda').style('display','block')
+          }
+        } else {
+          if (sel === 'start' || sel === 'finish') {
+            selectedStartEnd = sel
+          } else {
+            selectedTime = dateLabels[sel]
+            buttonSelected = sel
+          }
+          // console.log({selectedTime, buttonSelected})
+          if (customShowing) {
+            buttonSelected = 'custom'
+            // console.log('custom is showing', {selectedStartEnd, customDay, customTime})
+            if (selectedStartEnd === 'start') {
+              dateDefaults[selectedStartEnd + '_' +'custom'] = moment().startOf('day').add(customDay, 'd').add(customTime, 'h')
+            } else {
+              dateDefaults[selectedStartEnd + '_' + 'custom'] = moment().startOf('day').add(customDay, 'd').add(customTime, 'h').subtract(recipe.totalRecipeLength, 'm')
+            }
+          }
+          // console.log('kkk', selectedStartEnd + '_' + buttonSelected)
+          skedStartDate = dateDefaults[selectedStartEnd + '_' + buttonSelected]
+          // console.log({selectedStartEnd, skedStartDate, buttonSelected})
+          // Make data adjustments here before rebuilding the chart
+          // Doing this because user might have modified position, so we need to carefully
+          // Move them into a new position ...
+          var data = recipe.steps // this.$store.state.recipe.steps
+          for (var datum of data) {
+            datum.startTime = null
+          }
+          // console.log({data, skedStartDate})
+          that.processData()
+          // console.log('updating chart')
+          that.updateChart(true)
+        }
+        makeAgenda()
+      }
+
+
+      // Control functions
+      function dropdown(that){
+        // console.log('mousedown')
+        if(d3.select(that).attr('class') == 'breadscheduler-dropdown breadscheduler-showing'){
+          d3.select(that).attr('class', 'breadscheduler-dropdown')
+        } else {
+          d3.selectAll('.breadscheduler-showing').attr('class', 'breadscheduler-dropdown')
+          d3.select(that).attr('class', 'breadscheduler-dropdown breadscheduler-showing')
+        }
+      }
+
+      function option(that){
+        // console.log('mouseup')
+        d3.select(that.parentNode.parentNode).select('.active-option').text(d3.select(that).text())
+        // console.log(d3.select(this))
+        toggleButton(d3.select(that).attr('data-toggle'))
+      }
+
+      function button(that){
+        if(d3.select(that).attr('class') == 'button button-active'){
+          // Do nothing
+        } else {
+          d3.selectAll('.button-active').attr('class', 'button')
+          d3.select(that).attr('class', 'button button-active')
+          toggleButton(d3.select(that).attr('data-toggle'))
+        }
+      }
+      // Controls
+      d3.selectAll('.breadscheduler-dropdown').on('click', function(){
+        dropdown(this)
+      })
+      d3.selectAll('.breadscheduler-option').on('click', function(){
+        option(this)
+      })
+      d3.selectAll('.breadscheduler-dropdown').on('keydown', function(e){
+        if(e.keyCode === 13){
+          dropdown(this)
+        }
+      })
+      d3.selectAll('.breadscheduler-option').on('keydown', function(e){
+        if(e.keyCode === 13){
+          option(this)
+        }
+      })
+      d3.selectAll('#breadscheduler-view-select .button').on('keydown', function(e){
+        if(e.keyCode === 13){
+          button(this)
+        }
+      })
+      d3.selectAll('#breadscheduler-view-select .button').on('click', function(){
+        button(this)
+      })
+      // Close the dropdown if the user clicks outside of it
+      window.onclick = function(event) {
+        if (!event.target.matches('.active-option')) {
+          var dropdowns = document.getElementsByClassName("breadscheduler-showing");
+          var i;
+          for (i = 0; i < dropdowns.length; i++) {
+            var openDropdown = dropdowns[i];
+            if (openDropdown.classList.contains('breadscheduler-showing')) {
+              openDropdown.classList.remove('breadscheduler-showing');
+            }
+          }
+        }
+      }
+
+      d3.select('.reset-button').on('click', function(){
+        resetViz()
+        d3.select(this).attr('class', 'reset-button hide')
+      })
+
+    })()
+  </script>
+</html>
